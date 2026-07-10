@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { Chapter, Mission3Def } from '../levels/types'
@@ -13,6 +13,7 @@ const toT = (v: Vec3) => new THREE.Vector3(v.x, v.z, v.y)
 
 export function FinaleView({ mission, chapter }: { mission: Mission3Def; chapter: Chapter }) {
   const mountRef = useRef<HTMLDivElement>(null)
+  const [glFailed, setGlFailed] = useState(false)
 
   const burns = useGame((s) => s.burns)
   const exec = useGame((s) => s.exec)
@@ -37,6 +38,13 @@ export function FinaleView({ mission, chapter }: { mission: Mission3Def; chapter
 
   useEffect(() => {
     const mount = mountRef.current!
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true })
+    } catch {
+      setGlFailed(true)
+      return
+    }
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x060a12)
     scene.fog = new THREE.Fog(0x060a12, 30, 90)
@@ -44,7 +52,6 @@ export function FinaleView({ mission, chapter }: { mission: Mission3Def; chapter
     const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200)
     camera.position.set(7, 6, 11)
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(window.devicePixelRatio)
     mount.appendChild(renderer.domElement)
 
@@ -345,6 +352,20 @@ export function FinaleView({ mission, chapter }: { mission: Mission3Def; chapter
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mission])
 
+  // Instruments-only fallback: without WebGL, evaluate burns directly so the
+  // finale stays playable on machines that cannot create a 3D context.
+  useEffect(() => {
+    if (!glFailed || !exec) return
+    const end = lincomb3(
+      active.map((t) => exec.coeffs[t.id] ?? 0),
+      active.map((t) => t.v),
+    )
+    const hit = dist3(end, mission.target.at) <= CAPTURE_3D
+    const timer = setTimeout(() => useGame.getState().executionFinished(hit), 800)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glFailed, exec])
+
   return (
     <div className="mission fade-in">
       <div className="hud">
@@ -363,6 +384,17 @@ export function FinaleView({ mission, chapter }: { mission: Mission3Def; chapter
       </div>
 
       <div className="playfield" ref={mountRef}>
+        {glFailed && (
+          <div className="screen" style={{ position: 'absolute', inset: 0 }}>
+            <div className="chap-sub" style={{ maxWidth: 460, textAlign: 'center', lineHeight: 1.7 }}>
+              VISUAL PROJECTOR OFFLINE — WEBGL UNAVAILABLE.
+              <br />
+              Flying on instruments: use the nav computer readouts. The gate sits at (
+              {mission.target.at.x}, {mission.target.at.y}, {mission.target.at.z}); your
+              resultant is shown below the sliders.
+            </div>
+          </div>
+        )}
         <CommsOverlay />
         {missionComplete && mission.debrief && <DebriefOverlay lines={mission.debrief} />}
       </div>
