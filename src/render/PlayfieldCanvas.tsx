@@ -253,9 +253,17 @@ export function PlayfieldCanvas({ mission }: { mission: MissionDef }) {
       const dpr = window.devicePixelRatio || 1
       const w = parent.clientWidth
       const h = parent.clientHeight
-      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-        canvas.width = w * dpr
-        canvas.height = h * dpr
+      // A zero-sized playfield (mid-layout, keyboard overlay, etc.) would make
+      // cam.scale 0 and the grid loops unbounded — skip the frame instead.
+      if (w <= 0 || h <= 0) {
+        raf = requestAnimationFrame(draw)
+        return
+      }
+      const bufW = Math.round(w * dpr)
+      const bufH = Math.round(h * dpr)
+      if (canvas.width !== bufW || canvas.height !== bufH) {
+        canvas.width = bufW
+        canvas.height = bufH
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       const cam: Cam = { w, h, scale: Math.min(w / 13.5, h / 9.5) }
