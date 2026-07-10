@@ -1,0 +1,20 @@
+/// <reference types="vitest/config" />
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  base: '/dead-reckoning/',
+  plugins: [react()],
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: { three: ['three'] },
+      },
+    },
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
+})
