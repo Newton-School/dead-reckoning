@@ -55,7 +55,7 @@ export function DialogueView({ lines }: { lines: Line[] }) {
           </div>
         </div>
         <div className="dialogue-hint">
-          {idx + 1} / {lines.length} — CLICK or SPACE to continue
+          {idx + 1} / {lines.length} — TAP, CLICK or SPACE to continue
         </div>
       </div>
     </div>

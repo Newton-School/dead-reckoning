@@ -205,6 +205,10 @@ export function FinaleView({ mission, chapter }: { mission: Mission3Def; chapter
       const now = performance.now() - clockStart
       const w = mount.clientWidth
       const h = mount.clientHeight
+      if (w <= 0 || h <= 0) {
+        raf = requestAnimationFrame(render)
+        return
+      }
       if (renderer.domElement.width !== w * renderer.getPixelRatio() || renderer.domElement.height !== h * renderer.getPixelRatio()) {
         renderer.setSize(w, h, false)
         camera.aspect = w / h
